@@ -1,20 +1,18 @@
 DownLoadManager
 ===============
 
-介绍：     基于ASIHTTP 的多线程下载管理功能模块，支持异步下载、暂停和恢复下载等等功能。暂停某个下载任务，再次恢复该下载任务时，不会重头下载，而是在已下载的地方开始下载（即断点下载）。具体有如下特色： 
+Description: Multi-threaded download manager modules AFnetworking based support asynchronous downloads, pause and resume downloads and more. When you pause a download task, restore the download task again, do not download heavy head, but the place has been downloaded to start the download (ie breakpoints download). Specifically the following characteristics:
 
-    1. 完整的UI设计，可直接拿来使用； 
+    1 Complete UI design can be directly used to use;
 
-    2. 异步，后台，多线程（ASI提供）； 
+    2 asynchronous, background, multi-threaded (ASI provided);
 
-    3. 最大同时下载数设置； 
+    3The maximum number of settings while downloading;
 
-    4. 下载任务排队，暂停，等待，继续，删除某个下载任务； 
+    4 download task queue, pause, wait, continue, delete a download task;
 
-    5. 记录下载的未完成和已完成任务，并在下次启动时加载； 
+    5 records downloaded and completed the unfinished task, and at the next boot loader;
      
-    注1:某些下载地址被重定向后，会严重影响此程序的处理效果！
+    Note 1: Some download address is redirected, it will seriously affect the treatment effect of this program!
 
-    作者说：如有问题请email：tigerandy@163.com。 
-
-    
+    The authors say: If you have questions, please email: vuminh.trong@gmail.com.
