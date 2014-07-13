@@ -3,7 +3,6 @@
 
 
 #import "CommonHelper.h"
-#import "FPTFileDownloadModel.h"
 
 #import <CommonCrypto/CommonDigest.h>
 
@@ -124,37 +123,37 @@
        return patharr;
 }
 
-+(NSMutableArray *)getAllFinishFilesListWithPatharr:(NSArray *)patharr {
-
-    NSMutableArray *finishlist = [[NSMutableArray alloc]init];
-    for (NSString *pathstr in patharr) {
-        NSFileManager *fileManager=[NSFileManager defaultManager];
-        if( ![fileManager fileExistsAtPath:pathstr]){
-            break;
-        }
-        NSError *error;
-        NSArray *filelist=[fileManager contentsOfDirectoryAtPath:pathstr error:&error];
-        if(!error)
-        {
-            NSLog(@"%@",[error description]);
-            
-        }
-        if (filelist ==nil) {
-            break;
-        }
-        for(NSString *fileName in filelist)
-        {
-            FPTFileDownloadModel *finishedFile=[[FPTFileDownloadModel alloc] init];
-            finishedFile.fileName=fileName;
-            finishedFile.targetPath = [pathstr stringByAppendingPathComponent:fileName];
-            //Get the file size based on file name
-            NSInteger length=[[fileManager contentsAtPath:finishedFile.targetPath] length];
-            finishedFile.fileSize=[CommonHelper getFileSizeString:[NSString stringWithFormat:@"%d",length]];
-            [finishlist addObject:finishedFile];
-        }
-    }
-    return finishlist;
-}
+//+(NSMutableArray *)getAllFinishFilesListWithPatharr:(NSArray *)patharr {
+//
+//    NSMutableArray *finishlist = [[NSMutableArray alloc]init];
+//    for (NSString *pathstr in patharr) {
+//        NSFileManager *fileManager=[NSFileManager defaultManager];
+//        if( ![fileManager fileExistsAtPath:pathstr]){
+//            break;
+//        }
+//        NSError *error;
+//        NSArray *filelist=[fileManager contentsOfDirectoryAtPath:pathstr error:&error];
+//        if(!error)
+//        {
+//            NSLog(@"%@",[error description]);
+//            
+//        }
+//        if (filelist ==nil) {
+//            break;
+//        }
+//        for(NSString *fileName in filelist)
+//        {
+//            FPTFileDownloadModel *finishedFile=[[FPTFileDownloadModel alloc] init];
+//            finishedFile.fileName=fileName;
+//            finishedFile.targetPath = [pathstr stringByAppendingPathComponent:fileName];
+//            //Get the file size based on file name
+//            NSInteger length=[[fileManager contentsAtPath:finishedFile.targetPath] length];
+//            finishedFile.fileSize=[CommonHelper getFileSizeString:[NSString stringWithFormat:@"%d",length]];
+//            [finishlist addObject:finishedFile];
+//        }
+//    }
+//    return finishlist;
+//}
 
 +(NSString *)getTempFolderPathWithBasepath:(NSString *)name
 {

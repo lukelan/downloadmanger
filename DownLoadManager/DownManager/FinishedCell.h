@@ -3,7 +3,7 @@
 
 
 #import <UIKit/UIKit.h>
-#import "FPTFileDownloadModel.h"
+
 
 @interface FinishedCell : UITableViewCell {
 }

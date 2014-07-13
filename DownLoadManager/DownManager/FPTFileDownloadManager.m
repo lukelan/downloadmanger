@@ -7,7 +7,6 @@
 //
 
 #import "FPTFileDownloadManager.h"
-#import "Reachability.h"
 #import "AFDownloadRequestOperation.h"
 
 #define MAXDOWNLOAD 20
@@ -168,13 +167,15 @@ NSInteger  maxcount;
             //NSLog(@"%@,%lld",fileInfo.fileReceivedSize,totalBytesReadForFile);
             if ([[fileInfo objectForKey:@"isFirstReceived"] boolValue]) {
                 [fileInfo setValue:@(NO) forKey:@"isFirstReceived"];
-                [fileInfo setValue:[NSString stringWithFormat:@"%lld",totalBytesReadForFile] forKey:@"fileReceivedSize"];
-                [fileInfo setValue:[NSString stringWithFormat:@"%lld",totalBytesExpectedToReadForFile] forKey:@"fileSize"];
                 [fileInfo setValue:operation.tempPath forKey:@"tempPath"];
                 
-            } else {
-                [fileInfo setValue:[NSString stringWithFormat:@"%lld",totalBytesReadForFile] forKey:@"fileReceivedSize"];
+            }
+            
+            [fileInfo setValue:[NSString stringWithFormat:@"%lld",totalBytesReadForFile] forKey:@"fileReceivedSize"];
+            if (totalBytesExpectedToReadForFile > 0) {
                 [fileInfo setValue:[NSString stringWithFormat:@"%lld",totalBytesExpectedToReadForFile] forKey:@"fileSize"];
+            } else {
+                [fileInfo setValue:[NSString stringWithFormat:@"%lld",totalBytesExpected] forKey:@"fileSize"];
             }
             
             if([self.downloadDelegate respondsToSelector:@selector(updateCellProgress:)])
@@ -508,7 +509,7 @@ NSInteger  maxcount;
 	return self;
 }
 -(void)cleanLastInfo{
-    for (ASIHTTPRequest *request in _downinglist) {
+    for (AFDownloadRequestOperation *request in _downinglist) {
         if([request isExecuting])
             [request cancel];
     }

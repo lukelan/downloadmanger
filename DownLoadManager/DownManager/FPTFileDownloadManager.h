@@ -7,13 +7,19 @@
 //
 
 #import <Foundation/Foundation.h>
-//#import "ASIHTTPRequest.h"
-//#import "ASINetworkQueue.h"
 #import "CommonHelper.h"
 #import "DownloadDelegate.h"
-#import "FPTFileDownloadModel.h"
 #import "AFDownloadRequestOperation.h"
 #import <AVFoundation/AVAudioPlayer.h>
+
+enum FPTFileDownloadState : NSUInteger {
+    FPTFileDownloadStateUnknown = 0,
+    FPTFileDownloadStateDownloading = 1,
+    FPTFileDownloadStateWaiting = 2,
+    FPTFileDownloadStateStopping = 3,
+    FPTFileDownloadStateCompleted = 4,
+    FPTFileDownloadStateError = 5
+};
 
 extern NSInteger  maxcount;
 
@@ -21,7 +27,6 @@ extern NSInteger  maxcount;
 {
     NSInteger type;
     int count;
-    FPTFileDownloadModel *fileModel;
     int currentState;
 }
 @property(nonatomic,retain)UIImage *fileImage;
@@ -62,7 +67,6 @@ extern NSInteger  maxcount;
 ;
 -(void)loadTempfiles;//Temporary files will be loaded locally are not downloaded to the download list, but do not then start the download
 -(void)loadFinishedfiles;//The load local files have been downloaded to the completion of the downloaded list
--(UIImage *)getImage:(FPTFileDownloadModel *)fileinfo;
 -(id)initWithBasepath:(NSString *)basepath;
 +(FPTFileDownloadManager *) sharedFPTFileDownloadManagerWithBasepath:(NSString *)basepath;
 +(FPTFileDownloadManager *) sharedFPTFileDownloadManager;
