@@ -11,12 +11,14 @@
 
 enum FPTFileDownloadState : NSUInteger {
     FPTFileDownloadStateUnknown = 0,
-    FPTFileDownloadStateDownload = 1,
+    FPTFileDownloadStateDownloading = 1,
     FPTFileDownloadStateWaiting = 2,
-    FPTFileDownloadStateStop = 3,
+    FPTFileDownloadStateStopping = 3,
+    FPTFileDownloadStateCompleted = 4,
+    FPTFileDownloadStateError = 5
 };
 
-@interface FPTFileDownloadModel : NSObject {
+@interface FPTFileDownloadModel : NSObject <NSCoding>{
     
 }
 
@@ -32,16 +34,6 @@ enum FPTFileDownloadState : NSUInteger {
 @property(nonatomic,retain)NSString *time;
 @property(nonatomic,retain)NSString *targetPath;
 @property(nonatomic,retain)NSString *tempPath;
-/*Download state logic is this: three states, download, and wait for the download, stop downloading
- Download: isDownloading = YES; willDownloading = NO;
- Wait for the download: isDownloading = NO; willDownloading = YES;
- Stop downloading: isDownloading = NO; willDownloading = NO;
- When it exceeds the maximum number of downloads, the download will continue to add into a wait state, when fewer than the maximum number of simultaneous downloads limit will automatically begin downloading the wait state task.
- You can download the active switching state
- Add time to sort all tasks.
- */
-@property(nonatomic)BOOL isDownloading;
-@property(nonatomic)BOOL  willDownloading;
 @property(nonatomic)enum FPTFileDownloadState downloadState;
 
 @property(nonatomic)BOOL error;

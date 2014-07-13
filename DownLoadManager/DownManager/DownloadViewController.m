@@ -4,6 +4,7 @@
 
 #import "DownloadViewController.h"
 #import "FPTFileDownloadManager.h"
+#import "AFDownloadRequestOperation.h"
 #define OPENFINISHLISTVIEW
 
 @implementation DownloadViewController
@@ -157,17 +158,17 @@
     FPTFileDownloadManager *filedownmanage = [FPTFileDownloadManager sharedFPTFileDownloadManager];
     
     [filedownmanage startLoad];
-    self.downingList=filedownmanage.downinglist;
+    self.downingList = filedownmanage.downinglist;
     [self.downloadingTable reloadData];
     
-    self.finishedList=filedownmanage.finishedlist;
+    self.finishedList= filedownmanage.finishedlist;
     [self.finishedTable reloadData];
 
 }
 -(void)viewWillDisappear:(BOOL)animated{
     // self.navigationController.navigationBar.hidden = NO;
-    FPTFileDownloadManager *filedownmanage = [FPTFileDownloadManager sharedFPTFileDownloadManager];
-    [filedownmanage saveFinishedFile];
+//    FPTFileDownloadManager *filedownmanage = [FPTFileDownloadManager sharedFPTFileDownloadManager];
+//    [filedownmanage saveFinishedFile];
 }
 - (void)viewDidLoad
 {
@@ -259,14 +260,14 @@
         [cell.progress1 setProgressImage:[UIImage imageNamed:@"下载管理进度背景点九.png"]];
 
 
-        ASIHTTPRequest *theRequest=[self.downingList objectAtIndex:indexPath.row];
+        AFDownloadRequestOperation *theRequest=[self.downingList objectAtIndex:indexPath.row];
         if (theRequest==nil) {
             return cell=Nil;
         }
-        FPTFileDownloadModel *fileInfo=[theRequest.userInfo objectForKey:@"File"];
-        NSString *currentsize = [CommonHelper getFileSizeString:fileInfo.fileReceivedSize];
-        NSString *totalsize = [CommonHelper getFileSizeString:fileInfo.fileSize];
-        cell.fileName.text=fileInfo.fileName;
+        NSDictionary *fileInfo=[theRequest.userInfo objectForKey:@"File"];
+        NSString *currentsize = [CommonHelper getFileSizeString:[fileInfo objectForKey:@"fileReceivedSize"]];
+        NSString *totalsize = [CommonHelper getFileSizeString:[fileInfo objectForKey:@"fileSize"]];
+        cell.fileName.text=[fileInfo objectForKey:@"fileName"];
         cell.fileCurrentSize.text=currentsize;
         if ([totalsize longLongValue]<=0) {
             cell.fileSize.text=@"Unknown";
@@ -275,33 +276,35 @@
        // cell.sizeinfoLab.text = [NSString stringWithFormat:@"%@/%@",currentsize,totalsize];
         cell.fileInfo=fileInfo;
         cell.request=theRequest;
-        cell.fileTypeLab.text  =[NSString stringWithFormat:@"Format:%@",fileInfo.fileType] ;
-        cell.timelable.text =[NSString stringWithFormat:@"%@",fileInfo.time] ;
+        cell.fileTypeLab.text  =[NSString stringWithFormat:@"Format:%@",[fileInfo objectForKey:@"fileType"]] ;
+        cell.timelable.text =[NSString stringWithFormat:@"%@",[fileInfo objectForKey:@"time"]] ;
         cell.timelable.hidden = YES;
-        cell.fileImage.image = fileInfo.fileimage;//[self getImage:fileInfo];
+        //cell.fileImage.image = fileInfo.fileimage;//[self getImage:fileInfo];
 
         if ([currentsize longLongValue]==0) {
             [cell.progress1 setProgress:0.0f];
         }else
-        [cell.progress1 setProgress:[CommonHelper getProgress:[fileInfo.fileSize longLongValue] currentSize:[fileInfo.fileReceivedSize longLongValue]]];
+            [cell.progress1 setProgress:[CommonHelper getProgress:[[fileInfo objectForKey:@"fileSize"] longLongValue] currentSize:[[fileInfo objectForKey:@"fileReceivedSize"] longLongValue]]];
         cell.sizeinfoLab.text =[NSString stringWithFormat:@"%0.0f%@",100*(cell.progress1.progress),@"%"];
        // NSLog(@"process:%@",cell.sizeinfoLab.text);
-        if(fileInfo.isDownloading)//文件正在下载
-        {
-            [cell.operateButton setBackgroundImage:[UIImage imageNamed:@"下载管理-暂停按钮.png"] forState:UIControlStateNormal];
-        }
-        else if(!fileInfo.isDownloading && !fileInfo.willDownloading&&!fileInfo.error)
-        {
-            [cell.operateButton setBackgroundImage:[UIImage imageNamed:@"下载管理-开始按钮.png"] forState:UIControlStateNormal];
-            cell.sizeinfoLab.text = @"Timeout";
-        }else if(!fileInfo.isDownloading && fileInfo.willDownloading&&!fileInfo.error)
-        {
-            [cell.operateButton setBackgroundImage:[UIImage imageNamed:@"下载管理-开始按钮.png"] forState:UIControlStateNormal];
-            cell.sizeinfoLab.text = @"Wait";
-        }else if (fileInfo.error)
+        if ([[fileInfo objectForKey:@"error"]boolValue])
         {
             [cell.operateButton setBackgroundImage:[UIImage imageNamed:@"下载管理-开始按钮.png"] forState:UIControlStateNormal];
             cell.sizeinfoLab.text = @"Error";
+        } else {
+            if([[fileInfo objectForKey:@"downloadState"] integerValue] == FPTFileDownloadStateDownloading)//文件正在下载
+            {
+                [cell.operateButton setBackgroundImage:[UIImage imageNamed:@"下载管理-暂停按钮.png"] forState:UIControlStateNormal];
+            }
+            else if([[fileInfo objectForKey:@"downloadState"] integerValue] == FPTFileDownloadStateStopping)
+            {
+                [cell.operateButton setBackgroundImage:[UIImage imageNamed:@"下载管理-开始按钮.png"] forState:UIControlStateNormal];
+                cell.sizeinfoLab.text = @"Timeout";
+            }else if([[fileInfo objectForKey:@"downloadState"] integerValue] == FPTFileDownloadStateWaiting)
+            {
+                [cell.operateButton setBackgroundImage:[UIImage imageNamed:@"下载管理-开始按钮.png"] forState:UIControlStateNormal];
+                cell.sizeinfoLab.text = @"Wait";
+            }
         }
         return cell;
     }
@@ -313,14 +316,14 @@
         FinishedCell *cell=(FinishedCell *)[self.finishedTable dequeueReusableCellWithIdentifier:finishedCellIdentifier];
           cell.delegate = self;
 
-        FPTFileDownloadModel *fileInfo=[self.finishedList objectAtIndex:indexPath.row];
-        cell.fileName.text=fileInfo.fileName;
+        NSDictionary *fileInfo=[self.finishedList objectAtIndex:indexPath.row];
+        cell.fileName.text=[fileInfo objectForKey:@"fileName"];
         
-        cell.fileSize.text=[CommonHelper getFileSizeString:fileInfo.fileSize];
+        cell.fileSize.text=[CommonHelper getFileSizeString:[fileInfo objectForKey:@"fileSize"]];
         cell.fileInfo=fileInfo;
         cell.fileTypeLab.text  =[NSString stringWithFormat:@"Format:%@",fileInfo.fileType] ;
-        cell.timelable.text =[NSString stringWithFormat:@"%@",fileInfo.time] ;
-        cell.fileImage.image = fileInfo.fileimage;
+        cell.timelable.text =[NSString stringWithFormat:@"%@",[fileInfo objectForKey:@"time"]] ;
+        cell.fileImage.image = [fileInfo objectForKey:@"fileimage"];
         return cell;
     }
 
@@ -343,7 +346,7 @@
     {
         if(tableView.tag==101)//Downloading forms
         {
-            ASIHTTPRequest *theRequest=[self.downingList objectAtIndex:indexPath.row];
+            AFDownloadRequestOperation *theRequest=[self.downingList objectAtIndex:indexPath.row];
             [[FPTFileDownloadManager sharedFPTFileDownloadManager] deleteRequest:theRequest];
             [self.downingList removeObjectAtIndex:indexPath.row];
             [self.downloadingTable reloadData];
@@ -351,7 +354,7 @@
 #ifdef OPENFINISHLISTVIEW
         else//Download the form has been completed
         {
-            FPTFileDownloadModel *selectFile=[self.finishedList objectAtIndex:indexPath.row];
+            NSDictionary *selectFile=[self.finishedList objectAtIndex:indexPath.row];
             [[FPTFileDownloadManager sharedFPTFileDownloadManager]  deleteFinishFile:selectFile];
             [self.finishedTable reloadData];
         }
@@ -359,7 +362,7 @@
     }
 }
 
--(void)updateCellOnMainThread:(FPTFileDownloadModel *)fileInfo
+-(void)updateCellOnMainThread:(NSDictionary *)fileInfo
 {
 //    self.bandwithLab.text = [NSString stringWithFormat:@"%@/S",[CommonHelper getFileSizeString:[NSString stringWithFormat:@"%lu",[ASIHTTPRequest averageBandwidthUsedPerSecond]]]] ;
     NSArray* cellArr = [self.downloadingTable visibleCells];
@@ -368,41 +371,43 @@
         if([obj isKindOfClass:[DownloadCell class]])
         {
             DownloadCell *cell=(DownloadCell *)obj;
-            if([cell.fileInfo.fileURL isEqualToString: fileInfo.fileURL])
+            if([[cell.fileInfo objectForKey:@"fileURL"] isEqualToString: [fileInfo objectForKey:@"fileURL"]])
             {
                 NSString *currentsize;
-                if (fileInfo.post) {
-                    currentsize = fileInfo.fileUploadSize;
+                if ([fileInfo objectForKey:@"post"]) {
+                    currentsize = [fileInfo objectForKey:@"fileUploadSize"];
                     
                 }else
-                   currentsize = fileInfo.fileReceivedSize;
-                NSString *totalsize = [CommonHelper getFileSizeString:fileInfo.fileSize];
+                   currentsize = [fileInfo objectForKey:@"fileReceivedSize"];
+                NSString *totalsize = [CommonHelper getFileSizeString:[fileInfo objectForKey:@"fileSize"]];
                 cell.fileCurrentSize.text=[CommonHelper getFileSizeString:currentsize];;
                 cell.fileSize.text = [NSString stringWithFormat:@"Size:%@",totalsize];
 //                cell.sizeinfoLab.text = [NSString stringWithFormat:@"%@/%@",currentsize,totalsize];
 //                NSLog(@"%@",cell.sizeinfoLab.text);
                 
-                [cell.progress1 setProgress:[CommonHelper getProgress:[fileInfo.fileSize floatValue] currentSize:[currentsize floatValue]]];
+                [cell.progress1 setProgress:[CommonHelper getProgress:[[fileInfo objectForKey:@"fileSize"] floatValue] currentSize:[currentsize floatValue]]];
                 NSLog(@"%f",cell.progress1 .progress);
 
                  cell.sizeinfoLab.text =[NSString stringWithFormat:@"%.0f%@",100*(cell.progress1.progress),@"%"];
 //                cell.averagebandLab.text =[NSString stringWithFormat:@"%@/s",[CommonHelper getFileSizeString:[NSString stringWithFormat:@"%lu",[ASIHTTPRequest averageBandwidthUsedPerSecond]]]] ;
-                if(fileInfo.isDownloading)//File Downloading
-                {
-                    [cell.operateButton setBackgroundImage:[UIImage imageNamed:@"下载管理-暂停按钮.png"] forState:UIControlStateNormal];
-                }
-                else if(!fileInfo.isDownloading && !fileInfo.willDownloading&&!fileInfo.error)
-                {
-                    [cell.operateButton setBackgroundImage:[UIImage imageNamed:@"下载管理-开始按钮.png"] forState:UIControlStateNormal];
-                    cell.sizeinfoLab.text = @"Timeout";
-                }else if(!fileInfo.isDownloading && fileInfo.willDownloading&&!fileInfo.error)
-                {
-                    [cell.operateButton setBackgroundImage:[UIImage imageNamed:@"下载管理-开始按钮.png"] forState:UIControlStateNormal];
-                    cell.sizeinfoLab.text = @"Wait";
-                }else if (fileInfo.error)
+                if ([[fileInfo objectForKey:@"error"]boolValue])
                 {
                     [cell.operateButton setBackgroundImage:[UIImage imageNamed:@"下载管理-开始按钮.png"] forState:UIControlStateNormal];
                     cell.sizeinfoLab.text = @"Error";
+                } else {
+                    if([[fileInfo objectForKey:@"downloadState"] integerValue] == FPTFileDownloadStateDownloading)//文件正在下载
+                    {
+                        [cell.operateButton setBackgroundImage:[UIImage imageNamed:@"下载管理-暂停按钮.png"] forState:UIControlStateNormal];
+                    }
+                    else if([[fileInfo objectForKey:@"downloadState"] integerValue] == FPTFileDownloadStateStopping)
+                    {
+                        [cell.operateButton setBackgroundImage:[UIImage imageNamed:@"下载管理-开始按钮.png"] forState:UIControlStateNormal];
+                        cell.sizeinfoLab.text = @"Timeout";
+                    }else if([[fileInfo objectForKey:@"downloadState"] integerValue] == FPTFileDownloadStateWaiting)
+                    {
+                        [cell.operateButton setBackgroundImage:[UIImage imageNamed:@"下载管理-开始按钮.png"] forState:UIControlStateNormal];
+                        cell.sizeinfoLab.text = @"Wait";
+                    }
                 }
             }
         }
@@ -410,35 +415,36 @@
 }
 
 #pragma mark --- updateUI delegate ---
--(void)startDownload:(ASIHTTPRequest *)request;
+-(void)startDownload:(AFDownloadRequestOperation *)request;
 {
     NSLog(@"-------Start downloading!");
 }
 
--(void)updateCellProgress:(ASIHTTPRequest *)request;
+-(void)updateCellProgress:(AFDownloadRequestOperation *)request;
 {
-    FPTFileDownloadModel *fileInfo=[request.userInfo objectForKey:@"File"];
+    NSDictionary *fileInfo=[request.userInfo objectForKey:@"File"];
     [self performSelectorOnMainThread:@selector(updateCellOnMainThread:) withObject:fileInfo waitUntilDone:YES];
 }
 
--(void)finishedDownload:(ASIHTTPRequest *)request;
+-(void)finishedDownload:(AFDownloadRequestOperation *)request;
 {
 
-   // [self.downingList removeObject:request];
+     self.downingList = [FPTFileDownloadManager sharedFPTFileDownloadManager].downinglist;
     [self.downloadingTable reloadData];
      self.bandwithLab.text = @"0.00K/S";
 
     [self.finishedTable reloadData];
 
 }
-- (void)deleteFinishedFile:(FPTFileDownloadModel *)selectFile
+- (void)deleteFinishedFile:(NSDictionary *)selectFile
 {
     self.finishedList = [FPTFileDownloadManager sharedFPTFileDownloadManager].finishedlist;
     [self.finishedTable reloadData];
 }
 -(void)ReloadDownLoadingTable
 {
-    self.downingList =[FPTFileDownloadManager sharedFPTFileDownloadManager].downinglist;
+    self.downingList = [FPTFileDownloadManager sharedFPTFileDownloadManager].downinglist;
+    
     [self.downloadingTable reloadData];
 }
 //-(BOOL) respondsToSelector:(SEL)aSelector {

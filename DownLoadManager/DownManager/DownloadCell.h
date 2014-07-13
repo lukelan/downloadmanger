@@ -3,8 +3,8 @@
 
 
 #import <UIKit/UIKit.h>
-#import "FPTFileDownloadModel.h"
 //#import "Constants.h"
+#import "AFDownloadRequestOperation.h"
 
 
 @interface DownloadCell : UITableViewCell {
@@ -23,8 +23,8 @@
 @property (weak, nonatomic) IBOutlet UILabel *timelable;
 @property(nonatomic,weak)IBOutlet UIButton *operateButton;
 
-@property(nonatomic,retain)ASIHTTPRequest *request;//The document initiated request
-@property(nonatomic,retain)FPTFileDownloadModel *fileInfo;
+@property(nonatomic,retain)AFDownloadRequestOperation *request;//The document initiated request
+@property(nonatomic,retain)NSDictionary *fileInfo;
 
 
 - (IBAction)deleteRquest:(id)sender;

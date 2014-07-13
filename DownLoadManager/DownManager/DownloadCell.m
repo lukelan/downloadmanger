@@ -42,9 +42,9 @@
 {
 	//During operation should be banned in response to the key may cause abnormal
     sender.userInteractionEnabled = NO;
-    FPTFileDownloadModel *downFile=self.fileInfo;
+    NSDictionary *downFile=self.fileInfo;
     FPTFileDownloadManager *filedownmanage = [FPTFileDownloadManager sharedFPTFileDownloadManager];
-    if(downFile.isDownloading)//File is being downloaded, and then click the pause downloads are likely to enter the wait state
+    if([[downFile objectForKey:@"downloadState"] integerValue] == FPTFileDownloadStateDownloading)//File is being downloaded, and then click the pause downloads are likely to enter the wait state
     {
         [operateButton setBackgroundImage:[UIImage imageNamed:@"下载管理-开始按钮.png"] forState:UIControlStateNormal];
         [filedownmanage stopRequest:request];
@@ -52,7 +52,7 @@
     else
     {
             [operateButton setBackgroundImage:[UIImage imageNamed:@"下载管理-暂停按钮.png"] forState:UIControlStateNormal];
-            if (downFile.post) {
+            if ([[downFile objectForKey:@"post"] boolValue]) {
             }else
                 [filedownmanage resumeRequest:request];
     }

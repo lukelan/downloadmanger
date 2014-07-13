@@ -32,7 +32,7 @@
 
 - (IBAction)goDownloadingView:(UIButton *)sender;
 - (IBAction)goFinishedView:(UIButton *)sender;
-- (void)deleteFinishedFile:(FPTFileDownloadModel *)selectFile;
+- (void)deleteFinishedFile:(NSDictionary *)selectFile;
 -(void)ReloadDownLoadingTable;
 
 - (IBAction)back:(id)sender;
@@ -41,5 +41,5 @@
 -(void)showFinished;//View the downloaded file view completed
 -(void)showDowning;//See Downloading the file view
 -(void)startFlipAnimation:(NSInteger)type;//Play rotation animation, 0 from right to left, left to right 1
--(void)updateCellOnMainThread:(FPTFileDownloadModel *)fileInfo;//The main interface of the progress bar updates and information
+-(void)updateCellOnMainThread:(NSDictionary *)fileInfo;//The main interface of the progress bar updates and information
 @end

@@ -8,7 +8,7 @@
 @interface FinishedCell : UITableViewCell {
 }
 @property(nonatomic,assign)UIViewController *delegate;
-@property(nonatomic,retain) FPTFileDownloadModel *fileInfo;
+@property(nonatomic,retain) NSDictionary *fileInfo;
 @property (weak, nonatomic) IBOutlet UILabel *fileTypeLab;
 @property (weak, nonatomic) IBOutlet UIImageView *fileImage;
 @property(nonatomic,weak)IBOutlet UILabel *fileName;

@@ -68,6 +68,9 @@
     NSString* urlStr = [downURLArr objectAtIndex:sender.tag];
     NSString* name =  [downContentDatas objectAtIndex:sender.tag];
     NSLog(@"Url:%@,Name:%@",urlStr,name);
-    [ [FPTFileDownloadManager sharedFPTFileDownloadManager]downFileUrl:urlStr filename:name filetarget:@"mp3" fileimage:nil];
+    
+    [[FPTFileDownloadManager sharedFPTFileDownloadManager] downloadFileUrl:urlStr filename:name filetarget:@"mp3" fileimage:nil];
+    
+//    [ [FPTFileDownloadManager sharedFPTFileDownloadManager]downFileUrl:urlStr filename:name filetarget:@"mp3" fileimage:nil];
 }
 @end
