@@ -20,7 +20,7 @@
 	// Do any additional setup after loading the view, typically from a nib.
     [FPTFileDownloadManager sharedFPTFileDownloadManagerWithBasepath:@"DownLoad" TargetPathArr:[NSArray arrayWithObject:@"DownLoad/mp3"]];
     NSArray *onlineBooksUrl = [NSArray arrayWithObjects:@"http://219.239.26.20/download/53546556/76795884/2/dmg/232/4/1383696088040_516/QQ_V3.0.1.dmg",
-                               @"http://219.239.26.11/download/46280417/68353447/3/dmg/105/192/1369883541097_192/KindleForMac._V383233429_.dmg",
+                               @"book",
                                @"http://free2.macx.cn:81/Tools/Office/UltraEdit-v4-0-0-7.dmg",
                                @"http://dldir1.qq.com/qqfile/tm/TM2013Preview1.exe",
                                @"http://dldir1.qq.com/invc/tt/QQBrowserSetup.exe",
@@ -28,7 +28,7 @@
                                @"http://dl_dir.qq.com/invc/qqpinyin/QQPinyin_Setup_4.6.2028.400.exe",
                                @"https://github.com/oarrabi/Download-Manager/archive/master.zip",
                                @"https://github.com/square/SocketRocket/archive/master.zip",nil];
-    NSArray *names = [NSArray arrayWithObjects:@"MacQQ", @"KindleForMac",@"UltraEdit",@"TM2013",@"QQBrowser",@"QQMusic",@"QQPinyin",@"Download-Manager",@"SocketRocket",nil];
+    NSArray *names = [NSArray arrayWithObjects:@"MacQQ", @"book",@"UltraEdit",@"TM2013",@"QQBrowser",@"QQMusic",@"QQPinyin",@"Download-Manager",@"SocketRocket",nil];
     
     downContentDatas = [[NSMutableArray alloc]initWithArray:names];
     downURLArr = [[NSArray alloc]initWithArray:onlineBooksUrl];
@@ -69,7 +69,22 @@
     NSString* name =  [downContentDatas objectAtIndex:sender.tag];
     NSLog(@"Url:%@,Name:%@",urlStr,name);
     
-    [[FPTFileDownloadManager sharedFPTFileDownloadManager] downloadFileUrl:urlStr filename:name filetarget:@"mp3" fileimage:nil];
+    
+    // HARD CODED to download book
+    if ([urlStr isEqualToString:@"book"]) {
+        
+        NSArray *bookLinks = [NSArray arrayWithObjects:@"https://s3.amazonaws.com/vongz/page/page1.zip",
+                                   @"https://s3.amazonaws.com/vongz/page/page2.zip",
+                                   @"https://s3.amazonaws.com/vongz/page/page3.zip",
+                                   @"https://s3.amazonaws.com/vongz/page/page4.zip",
+                                   @"https://s3.amazonaws.com/vongz/page/page5.zip",
+                                   nil];
+
+        
+        [[FPTFileDownloadManager sharedFPTFileDownloadManager] downloadFileUrls:bookLinks fileTarget:name];
+    } else {
+        [[FPTFileDownloadManager sharedFPTFileDownloadManager] downloadFileUrl:urlStr fileName:name fileTarget:name fileIndex:0];
+    }
     
 //    [ [FPTFileDownloadManager sharedFPTFileDownloadManager]downFileUrl:urlStr filename:name filetarget:@"mp3" fileimage:nil];
 }

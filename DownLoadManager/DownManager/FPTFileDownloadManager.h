@@ -76,7 +76,9 @@ extern NSInteger  maxcount;
 -(void)restartAllRquests;
 
 
-- (void)downloadFileUrl:(NSString *)urlStr filename:(NSString *)name filetarget:(NSString *)path fileimage:(UIImage *)image;
+- (void)downloadFileUrl:(NSString *)urlStr fileName:(NSString *)name fileTarget:(NSString *)path fileIndex:(NSInteger)fileIndex;
+- (void)downloadFileUrls:(NSArray *)urls fileTarget:(NSString *)path;
+
 -(void)saveState;
 -(void)loadState;
 -(NSArray*) getDownloadingList;

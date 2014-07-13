@@ -83,6 +83,7 @@ NSInteger  maxcount;
 //        NSLog(@"write plist fail");
 //    }
 //}
+
 -(void)beginRequest:(NSDictionary *)fileInfo isBeginDown:(BOOL)isBeginDown
 {
     for(AFDownloadRequestOperation *tempRequest in _downinglist){
@@ -112,8 +113,6 @@ NSInteger  maxcount;
         }
     }
     
-    //fileInfo.isFirstReceived = YES;
-    
     NSURL *url = [NSURL URLWithString:[fileInfo objectForKey:@"fileURL"]];
     NSMutableURLRequest *request = [NSMutableURLRequest requestWithURL:url cachePolicy:NSURLRequestUseProtocolCachePolicy timeoutInterval:3600];
     
@@ -126,7 +125,6 @@ NSInteger  maxcount;
     
     [operation setUserInfo:[NSDictionary dictionaryWithObject:fileInfo forKey:@"File"]];
     
-    [operation pause];
 //    if (isBeginDown) {
         [operation setCompletionBlockWithSuccess:^(AFHTTPRequestOperation *operation, id responseObject) {
             NSLog(@"Successfully downloaded file to %@", [fileInfo objectForKey:@"targetPath"] );
@@ -222,8 +220,6 @@ NSInteger  maxcount;
     NSDictionary *fileInfo =  [request.userInfo objectForKey:@"File"];
     [request pause];
     
-    //fileInfo.downloadState = FPTFileDownloadStateStopping;
-    //[self saveState];
     [fileInfo setValue:@(FPTFileDownloadStateStopping) forKey:@"downloadState"];
     [self saveFile:fileInfo];
     [self startLoad];
@@ -231,17 +227,18 @@ NSInteger  maxcount;
 
 -(void)deleteRequest:(AFDownloadRequestOperation *)request {
     
+    [self stopRequest:request];
+    
     NSDictionary *fileInfo =  [request.userInfo objectForKey:@"File"];
     [request cancel];
     
-    [fileInfo setValue:@(FPTFileDownloadStateStopping) forKey:@"FPTFileDownloadStateUnknown"];
-    
     [self deleteFile:fileInfo];
     
-    [_filedownlist removeObject:fileInfo];
-    [_finishedList removeObject:fileInfo];
+    // Check and remove all related files in folders
+    //[_filedownlist removeObject:fileInfo];
+    //[_finishedList removeObject:fileInfo];
     [_downinglist removeObject:request];
-    //[self saveState];
+    
     [self startLoad];
 }
 
@@ -263,15 +260,20 @@ NSInteger  maxcount;
 }
 
 -(void)deleteFinishFile:(NSDictionary *)selectFile{
-    [_finishedList removeObject:selectFile];
     [self deleteFile:selectFile];
+//    [_finishedList removeObject:selectFile];
 }
 
 
 #pragma mark -- download file --
 
-- (void)downloadFileUrl:(NSString *)urlStr filename:(NSString *)name filetarget:(NSString *)path fileimage:(UIImage *)image {
+- (void)downloadFileUrl:(NSString *)urlStr fileName:(NSString *)name fileTarget:(NSString *)path fileIndex:(NSInteger)fileIndex {
+    [self downloadFileUrl:urlStr fileName:name fileTarget:path fileIndex:fileIndex startSignal:YES];
+}
+
+- (void)downloadFileUrl:(NSString *)urlStr fileName:(NSString *)name fileTarget:(NSString *)path fileIndex:(NSInteger)fileIndex startSignal:(BOOL)startSignal {
     
+    NSString *fileTarget = [path mutableCopy];
     path= [CommonHelper getTargetPathWithBasepath:_basepath subpath:path];
     path = [path stringByAppendingPathComponent:name];
     
@@ -283,16 +285,17 @@ NSInteger  maxcount;
     _fileInfo = [[NSMutableDictionary alloc]init];
     [_fileInfo setValue:name forKey:@"fileName"];
     [_fileInfo setValue:urlStr forKey:@"fileURL"];
+    [_fileInfo setValue:fileTarget forKey:@"fileTarget"];
+    [_fileInfo setValue:@(fileIndex) forKey:@"fileIndex"];
     
     NSDate *myDate = [NSDate date];
     [_fileInfo setValue:[CommonHelper dateToString:myDate] forKey:@"time"];
     [_fileInfo setValue:[name pathExtension] forKey:@"fileType"];
-    path = [CommonHelper getTargetPathWithBasepath:_basepath subpath:path];
-    path = [path stringByAppendingPathComponent:name];
     [_fileInfo setValue:path forKey:@"targetPath"];
     [_fileInfo setValue:@(FPTFileDownloadStateWaiting) forKey:@"downloadState"];
     [_fileInfo setValue:@(NO) forKey:@"error"];
     [_fileInfo setValue:@(YES) forKey:@"isFirstReceived"];
+    [_fileInfo setValue:@(startSignal) forKey:@"startSignal"];
 //    NSString *tempfilePath= [TEMPPATH stringByAppendingPathComponent: [_fileInfo objectForKey:@"fileName"]]  ;
 //    [_fileInfo setValue:tempfilePath forKey:@"tempPath"];
 //    
@@ -322,7 +325,33 @@ NSInteger  maxcount;
     //Without the existence of files and temporary files, it is a new download
     [_filedownlist addObject:_fileInfo];
     [self saveFile:_fileInfo];
-    [self startLoad];
+    
+    if (startSignal) {
+        [self startLoad];
+    }
+}
+
+- (void)downloadFileUrls:(NSArray *)urls fileTarget:(NSString *)path {
+    
+    NSString *fileTarget = [path mutableCopy];
+    path= [CommonHelper getTargetPathWithBasepath:_basepath subpath:path];
+    
+    int index = 0;
+    for (NSString* urlStr in urls) {
+        // Get file name
+        NSArray *parts = [urlStr componentsSeparatedByString:@"/"];
+        NSString *name = [parts objectAtIndex:[parts count]-1];
+//        NSString *filePath = [path stringByAppendingPathComponent:name];
+        
+        if (index + 1 == urls.count) {
+            // last index -> need to start download
+            [self downloadFileUrl:urlStr fileName:name fileTarget:fileTarget fileIndex:index startSignal:YES];
+        } else {
+            [self downloadFileUrl:urlStr fileName:name fileTarget:fileTarget fileIndex:index startSignal:NO];
+        }
+        
+        index ++;
+    }
 }
 
 -(void)alertView:(UIAlertView *)alertView clickedButtonAtIndex:(NSInteger)buttonIndex
@@ -354,7 +383,10 @@ NSInteger  maxcount;
         [_filedownlist addObject:_fileInfo];
         
         [self saveFile:_fileInfo];
-        [self startLoad];
+        
+        if ([[_fileInfo objectForKey:@"startSignal"] boolValue]) {
+            [self startLoad];
+        }
 
     }
     if(self.VCdelegate!=nil && [self.VCdelegate respondsToSelector:@selector(allowNextRequest)])
@@ -364,12 +396,16 @@ NSInteger  maxcount;
 }
 -(void)startLoad {
     /*Three states download, download, and wait for the download, stop downloading
-     Download: isDownloading = YES; willDownloading = NO;
-     Wait for the download: isDownloading = NO; willDownloading = YES;
-     Stop downloading: isDownloading = NO; willDownloading = NO;
+      - Download
+      - Wait for the download
+      - Stop downloading
      
      Add time to sort all tasks.
+     
+     1 Operation for folder
      */
+    
+    @synchronized(self) {
     
 //    NSInteger num = 0;
     NSInteger max = maxcount;
@@ -383,10 +419,41 @@ NSInteger  maxcount;
         // start download extra files
         int numExtraDownload = max - downloadingFiles.count;
         
-        NSPredicate *predicate = [NSPredicate predicateWithFormat:@"downloadState == %i", FPTFileDownloadStateWaiting];
+        predicate = [NSPredicate predicateWithFormat:@"downloadState == %i", FPTFileDownloadStateWaiting];
         NSArray *stoppingFiles = [_filedownlist filteredArrayUsingPredicate:predicate];
+        NSMutableDictionary *processedFolders = [NSMutableDictionary dictionary];
         
         for (NSDictionary *file in stoppingFiles) {
+            
+            // Check if the book is processed -> continue
+            if ([processedFolders objectForKey:[file objectForKey:@"fileTarget"]]) continue;
+            
+            // Check the folder if not any book is stopping or downloading -> not allow change to downloading state
+            predicate = [NSPredicate predicateWithFormat:@"fileTarget == %@", [file objectForKey:@"fileTarget"]];
+            NSArray *folderFiles = [_filedownlist filteredArrayUsingPredicate:predicate];
+            
+            if (folderFiles.count > 0) {
+                
+                [processedFolders setObject:[file objectForKey:@"fileTarget"] forKey:[file objectForKey:@"fileTarget"]];
+                
+                predicate = [NSPredicate predicateWithFormat:@"downloadState == %i OR downloadState ==%i", FPTFileDownloadStateDownloading,FPTFileDownloadStateStopping];
+                NSArray *folderExecutingFiles = [folderFiles filteredArrayUsingPredicate:predicate];
+                
+                if (folderExecutingFiles.count > 0) {
+                    continue; // Some file in folder is executing
+                } else {
+                    // find smallest index in the folder.
+                    predicate = [NSPredicate predicateWithFormat:@"downloadState == %i AND SELF.fileIndex == %@.@min.fileIndex", FPTFileDownloadStateWaiting,folderFiles];
+                    NSArray *folderWaitingFiles = [folderFiles filteredArrayUsingPredicate:predicate];
+                    
+                    NSDictionary *shouldFileInFolder = [folderWaitingFiles lastObject];
+                    [shouldFileInFolder setValue:@(FPTFileDownloadStateDownloading) forKey:@"downloadState"];
+                    numExtraDownload --;
+                    if (numExtraDownload == 0) break;
+                    else continue;
+                }
+            }
+            
             [file setValue:@(FPTFileDownloadStateDownloading) forKey:@"downloadState"];
             numExtraDownload --;
             if (numExtraDownload == 0) break;
@@ -402,6 +469,7 @@ NSInteger  maxcount;
         }
     }
     self.count = [_filedownlist count];
+    }
 }
 
 #pragma mark -- init methods --
@@ -434,9 +502,6 @@ NSInteger  maxcount;
         self.count = 0;
         if (self.basepath!=nil) {
             [self loadFiles];
-            //[self loadFinishedfiles];
-            //[self loadTempfiles];
-            
         }
         
     }
@@ -504,14 +569,35 @@ NSInteger  maxcount;
 - (void) deleteFile:(NSDictionary*)data
 {
     NSUserDefaults* defaults = [NSUserDefaults standardUserDefaults];
-    NSString* key = [NSString stringWithFormat:@"FILEINDICATOR-%@",[data objectForKey:@"fileURL"]];
-    [defaults removeObjectForKey:key];
-    
     NSFileManager *fileManager=[NSFileManager defaultManager];
-    
     NSError *error;
-    [fileManager removeItemAtPath:[data objectForKey:@"targetPath"] error:&error];
-    [fileManager removeItemAtPath:[data objectForKey:@"tempPath"] error:&error];
+    
+    // Delete related files in folder
+    NSPredicate *predicate = [NSPredicate predicateWithFormat:@"fileTarget == %@", [data objectForKey:@"fileTarget"]];
+    NSArray *folderFiles = [_filedownlist filteredArrayUsingPredicate:predicate];
+    
+    // Get folder & remove folders
+    NSString *folderPath = [[data objectForKey:@"targetPath"] stringByDeletingLastPathComponent];
+    [fileManager removeItemAtPath:folderPath error:&error];
+    
+    for (NSDictionary *fileInfo in folderFiles) {
+        NSString* key = [NSString stringWithFormat:@"FILEINDICATOR-%@",[data objectForKey:@"fileURL"]];
+        [defaults removeObjectForKey:key];
+//        [fileManager removeItemAtPath:[fileInfo objectForKey:@"targetPath"] error:&error];
+        [fileManager removeItemAtPath:[fileInfo objectForKey:@"tempPath"] error:&error];
+        [_filedownlist removeObject:fileInfo];
+    }
+    
+    // Remove related file in finished list
+    predicate = [NSPredicate predicateWithFormat:@"fileTarget == %@", [data objectForKey:@"fileTarget"]];
+    NSArray *folderDownloadedFiles = [_finishedList filteredArrayUsingPredicate:predicate];
+    for (NSDictionary *fileInfo in folderDownloadedFiles) {
+        NSString* key = [NSString stringWithFormat:@"FILEINDICATOR-%@",[data objectForKey:@"fileURL"]];
+        [defaults removeObjectForKey:key];
+        [fileManager removeItemAtPath:[fileInfo objectForKey:@"targetPath"] error:&error];
+        [fileManager removeItemAtPath:[fileInfo objectForKey:@"tempPath"] error:&error];
+        [_finishedList removeObject:fileInfo];
+    }
     
     [defaults synchronize];
 }
